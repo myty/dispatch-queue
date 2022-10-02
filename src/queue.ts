@@ -14,18 +14,21 @@ export class Queue<T> {
   async deque(): Promise<T> {
     return (
       this._queue.shift() ??
-      (await new Promise((resolve) => {
-        const onEnque = () => {
-          const value = this._queue.shift();
+        (await new Promise((resolve) => {
+          const onEnque = () => {
+            const value = this._queue.shift();
 
-          if (value != null) {
-            this._eventTarget.removeEventListener(QueueEvents.Enqued, onEnque);
-            resolve(value);
-          }
-        };
+            if (value != null) {
+              this._eventTarget.removeEventListener(
+                QueueEvents.Enqued,
+                onEnque,
+              );
+              resolve(value);
+            }
+          };
 
-        this._eventTarget.addEventListener(QueueEvents.Enqued, onEnque);
-      }))
+          this._eventTarget.addEventListener(QueueEvents.Enqued, onEnque);
+        }))
     );
   }
 }

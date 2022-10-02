@@ -1,5 +1,14 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { Queue } from "../src/queue";
+import { Queue } from "../src/queue.ts";
+import {
+  beforeEach,
+  describe,
+  it,
+} from "https://deno.land/std@0.158.0/testing/bdd.ts";
+import {
+  assert,
+  assertEquals,
+  assertExists,
+} from "https://deno.land/std@0.158.0/testing/asserts.ts";
 
 describe("Queue", () => {
   let queue: Queue<string>;
@@ -9,15 +18,15 @@ describe("Queue", () => {
   });
 
   it("create concurrent queue", () => {
-    expect(queue).toBeDefined();
+    assertExists(queue);
   });
 
   describe("enqueue", () => {
     it("does not throw", () => {
       queue.enque("test");
-      expect(() => {
+      assert(() => {
         queue.enque("test");
-      }).not.toThrow();
+      });
     });
   });
 
@@ -31,7 +40,7 @@ describe("Queue", () => {
       const result = await queue.deque();
 
       // Assert
-      expect(result).toBe(test1);
+      assertEquals(result, test1);
     });
 
     it("returns values in order", async () => {
@@ -46,7 +55,7 @@ describe("Queue", () => {
       const result2 = await queue.deque();
 
       // Assert
-      expect(result2).toBe(test2);
+      assertEquals(result2, test2);
     });
 
     it("waits for enqued value", async () => {
@@ -65,9 +74,9 @@ describe("Queue", () => {
 
       // Assert
       const duration = Date.now() - startTime;
-      expect(duration).toBeGreaterThan(delayMs);
-      expect(result1).toBe(test1);
-      expect(result2).toBe(test2);
+      assert(duration > delayMs);
+      assertEquals(result1, test1);
+      assertEquals(result2, test2);
     });
   });
 });

@@ -1,9 +1,9 @@
-import { DispatchQueueEventMap } from "./events/events-map";
-import { DispatchQueueEvents } from "./events/events";
-import { DispatchQueueStartupErrorEvent } from "./events/startup-error-event";
-import { DispatchQueueWorkerErrorEvent } from "./events/worker-error-event";
-import { Queue } from "./queue";
-import { Worker } from "./worker";
+import { DispatchQueueEventMap } from "./events/events-map.ts";
+import { DispatchQueueEvents } from "./events/events.ts";
+import { DispatchQueueStartupErrorEvent } from "./events/startup-error-event.ts";
+import { DispatchQueueWorkerErrorEvent } from "./events/worker-error-event.ts";
+import { Queue } from "./queue.ts";
+import { Worker } from "./worker.ts";
 
 interface DispatchQueueOptions<T> {
   processor(value: T, workerId: string): Promise<void>;
@@ -11,7 +11,7 @@ interface DispatchQueueOptions<T> {
 }
 
 export class DispatchQueue<T> {
-  private _abortController: AbortController;
+  private _abortController?: AbortController;
 
   private readonly _events = new EventTarget();
   private readonly _queue: Queue<T> = new Queue<T>();
@@ -25,10 +25,10 @@ export class DispatchQueue<T> {
           onComplete: (worker) => this._readyWorkerQueue.enque(worker),
           onError: (id, error) => {
             this._events.dispatchEvent(
-              new DispatchQueueWorkerErrorEvent(error, id)
+              new DispatchQueueWorkerErrorEvent(error, id),
             );
           },
-        })
+        }),
       );
     }
 
@@ -37,14 +37,14 @@ export class DispatchQueue<T> {
 
   addEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void
+    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
   ): void {
     this._events.addEventListener(type, listener as EventListener);
   }
 
   removeEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void
+    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
   ): void {
     this._events.removeEventListener(type, listener as EventListener);
   }
@@ -60,7 +60,7 @@ export class DispatchQueue<T> {
   }
 
   stopProcessing() {
-    this._abortController.abort();
+    this._abortController?.abort();
   }
 
   private async start(): Promise<void> {
