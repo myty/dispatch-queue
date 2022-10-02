@@ -1,6 +1,6 @@
 export class Deferred<T = void> implements Promise<T> {
-  private _resolveSelf: (value: T | PromiseLike<T>) => void;
-  private _rejectSelf: (reason?: any) => void;
+  private _resolveSelf?: (value: T | PromiseLike<T>) => void;
+  private _rejectSelf?: (reason?: any) => void;
   private promise: Promise<T>;
 
   constructor() {
@@ -39,9 +39,9 @@ export class Deferred<T = void> implements Promise<T> {
   }
 
   public resolve(val: T | PromiseLike<T>) {
-    this._resolveSelf(val);
+    this._resolveSelf?.(val);
   }
   public reject(reason: any) {
-    this._rejectSelf(reason);
+    this._rejectSelf?.(reason);
   }
 }
