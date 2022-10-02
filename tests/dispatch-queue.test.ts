@@ -3,9 +3,9 @@ import { DispatchQueueEvents } from "../src/events/events.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event.ts";
 import { delay } from "https://deno.land/std@0.154.0/async/delay.ts";
 import {
+  afterEach,
   beforeEach,
   describe,
-  afterEach,
   it,
 } from "https://deno.land/std@0.158.0/testing/bdd.ts";
 import {
@@ -67,67 +67,68 @@ describe("Dispatch", () => {
     assertSpyCall(mockedProcessor, 0);
   });
 
-  // describe.each([
-  //   { concurrentProcessorCount: 1, processCount: 2 },
-  //   { concurrentProcessorCount: 3, processCount: 3 },
-  //   { concurrentProcessorCount: 4, processCount: 10 },
-  //   { concurrentProcessorCount: 5, processCount: 27 },
-  //   { concurrentProcessorCount: 6, processCount: 6 },
-  //   { concurrentProcessorCount: 7, processCount: 50 },
-  //   { concurrentProcessorCount: 31, processCount: 50 },
-  // ])(
-  //   "when processCount=$processCount and concurrentProcessorCount=$concurrentProcessorCount",
-  //   ({ concurrentProcessorCount, processCount }) => {
-  //     const workerDelayMs = 25;
-  //     let deferredPromises: Record<string, Deferred>;
+  describe("concurrent processors", () => {
+    [
+      { concurrentProcessorCount: 1, processCount: 2 },
+      { concurrentProcessorCount: 3, processCount: 3 },
+      { concurrentProcessorCount: 4, processCount: 10 },
+      { concurrentProcessorCount: 5, processCount: 27 },
+      { concurrentProcessorCount: 6, processCount: 6 },
+      { concurrentProcessorCount: 7, processCount: 50 },
+      { concurrentProcessorCount: 31, processCount: 50 },
+    ].forEach(({ concurrentProcessorCount, processCount }) => {
+      describe(`when processCount=${processCount} and concurrentProcessorCount=${concurrentProcessorCount}`, () => {
+        const workerDelayMs = 25;
+        let deferredPromises: Record<string, Deferred>;
 
-  //     beforeEach(() => {
-  //       deferredPromises = {};
-  //       mockedProcessor = spy(async (value, _workerId) => {
-  //         await delay(workerDelayMs);
-  //         deferredPromises[value].resolve();
-  //       });
+        beforeEach(() => {
+          deferredPromises = {};
+          mockedProcessor = spy(async (value, _workerId) => {
+            await delay(workerDelayMs);
+            deferredPromises[value].resolve();
+          });
 
-  //       dispatcher = new DispatchQueue<string>({
-  //         processor: mockedProcessor,
-  //         concurrentWorkers: concurrentProcessorCount,
-  //       });
-  //     });
+          dispatcher = new DispatchQueue<string>({
+            processor: mockedProcessor,
+            concurrentWorkers: concurrentProcessorCount,
+          });
+        });
 
-  //     it("processes", async () => {
-  //       // Arrange
-  //       const expectedDuration =
-  //         Math.ceil(processCount / concurrentProcessorCount) * workerDelayMs +
-  //         concurrentProcessorCount * 25;
+        it("processes", async () => {
+          // Arrange
+          const expectedDuration =
+            Math.ceil(processCount / concurrentProcessorCount) * workerDelayMs +
+            concurrentProcessorCount * 25;
 
-  //       // Arrange & Act
-  //       const startTime = Date.now();
-  //       const deferredPromiseArray: Deferred[] = [];
+          // Arrange & Act
+          const startTime = Date.now();
+          const deferredPromiseArray: Deferred[] = [];
 
-  //       for (let index = 0; index < processCount; index++) {
-  //         const value = `value-${index}`;
-  //         const deferredPromise = new Deferred();
+          for (let index = 0; index < processCount; index++) {
+            const value = `value-${index}`;
+            const deferredPromise = new Deferred();
 
-  //         deferredPromiseArray.push(deferredPromise);
+            deferredPromiseArray.push(deferredPromise);
 
-  //         deferredPromises = {
-  //           ...deferredPromises,
-  //           [value]: deferredPromise,
-  //         };
+            deferredPromises = {
+              ...deferredPromises,
+              [value]: deferredPromise,
+            };
 
-  //         dispatcher.process(value);
-  //       }
+            dispatcher.process(value);
+          }
 
-  //       await Promise.allSettled(deferredPromiseArray);
+          await Promise.allSettled(deferredPromiseArray);
 
-  //       // Assert
-  //       const duration = Date.now() - startTime;
-  //       assertSpyCall(mockedProcessor, processCount);
-  //       expect(expectedDuration).toBeGreaterThanOrEqual(duration);
-  //       expect(workerDelayMs).toBeLessThanOrEqual(duration);
-  //     });
-  //   }
-  // );
+          // Assert
+          const duration = Date.now() - startTime;
+          assertSpyCall(mockedProcessor, processCount - 1);
+          assert(expectedDuration >= duration);
+          assert(workerDelayMs <= duration);
+        });
+      });
+    });
+  });
 
   describe("when worker has exception", () => {
     beforeEach(() => {
@@ -147,7 +148,7 @@ describe("Dispatch", () => {
       });
       dispatcher.addEventListener(
         DispatchQueueEvents.WorkerError,
-        eventListener
+        eventListener,
       );
 
       // Act

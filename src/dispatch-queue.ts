@@ -25,10 +25,10 @@ export class DispatchQueue<T> {
           onComplete: (worker) => this._readyWorkerQueue.enque(worker),
           onError: (id, error) => {
             this._events.dispatchEvent(
-              new DispatchQueueWorkerErrorEvent(error, id)
+              new DispatchQueueWorkerErrorEvent(error, id),
             );
           },
-        })
+        }),
       );
     }
 
@@ -37,14 +37,14 @@ export class DispatchQueue<T> {
 
   addEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void
+    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
   ): void {
     this._events.addEventListener(type, listener as EventListener);
   }
 
   removeEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void
+    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
   ): void {
     this._events.removeEventListener(type, listener as EventListener);
   }

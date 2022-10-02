@@ -24,7 +24,7 @@ export class Deferred<T = void> implements Promise<T> {
     onrejected?:
       | ((reason: any) => TResult2 | PromiseLike<TResult2>)
       | undefined
-      | null
+      | null,
   ): Promise<TResult1 | TResult2> {
     return this.promise.then(onfulfilled, onrejected);
   }
@@ -33,7 +33,7 @@ export class Deferred<T = void> implements Promise<T> {
     onrejected?:
       | ((reason: any) => TResult | PromiseLike<TResult>)
       | undefined
-      | null
+      | null,
   ): Promise<T | TResult> {
     return this.promise.catch(onrejected);
   }
