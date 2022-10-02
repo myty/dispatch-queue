@@ -1,0 +1,18 @@
+name: Clear README Cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clear-cache:
+    name: Clear README Image Cache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v1.1.0
+        with:
+          deno-version: v1.x # Run with latest stable Deno.
+
+      - name: Clear README Image Cache
+        run:  deno run --unstable --allow-net ./scripts/clear-readme-cache.ts
