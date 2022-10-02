@@ -5,17 +5,6 @@ processors.
 
 ## Installation
 
-### Node.js
-
-```bash
-# npm
-npm install --save dispatch-queue
-# yarn
-yarn add dispatch-queue
-# pnpm
-pnpm install --save dispatch-queue
-```
-
 ### Deno
 
 ```bash
