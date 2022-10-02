@@ -10,6 +10,9 @@ interface DispatchQueueOptions<T> {
   concurrentWorkers?: number;
 }
 
+/**
+ * A typed dispatch queue with configurable max concurrent processors
+ */
 export class DispatchQueue<T> {
   private _abortController?: AbortController;
 
@@ -49,16 +52,26 @@ export class DispatchQueue<T> {
     this._events.removeEventListener(type, listener as EventListener);
   }
 
+  /**
+   * Add value to be processed by the dispatch queue
+   */
   process<TValue extends T>(value: TValue): void {
     this._queue.enque(value);
   }
 
+  /**
+   * Starts the processing of items on the queue. Auto-starts on the creation of
+   * the DispatchQueue
+   */
   startProcessing() {
     this.start().catch((error) => {
       this._events.dispatchEvent(new DispatchQueueStartupErrorEvent(error));
     });
   }
 
+  /**
+   * Stops the processing of items on the queue
+   */
   stopProcessing() {
     this._abortController?.abort();
   }

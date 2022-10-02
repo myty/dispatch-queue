@@ -1,23 +1,20 @@
+import {
+  afterEach,
+  assert,
+  assertExists,
+  assertSpyCall,
+  beforeEach,
+  Deferred,
+  delay,
+  describe,
+  it,
+  Spy,
+  spy,
+} from "./deps.ts";
+
 import { DispatchQueue } from "../src/dispatch-queue.ts";
 import { DispatchQueueEvents } from "../src/events/events.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event.ts";
-import { delay } from "https://deno.land/std@0.154.0/async/delay.ts";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  it,
-} from "https://deno.land/std@0.158.0/testing/bdd.ts";
-import {
-  assert,
-  assertExists,
-} from "https://deno.land/std@0.158.0/testing/asserts.ts";
-import {
-  assertSpyCall,
-  Spy,
-  spy,
-} from "https://deno.land/std@0.158.0/testing/mock.ts";
-import { Deferred } from "./test-utils/deferred.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;
@@ -49,7 +46,7 @@ describe("Dispatch", () => {
   it("processes enqueued value", async () => {
     // Arrange
     const value = "test";
-    const deferredPromise = new Deferred();
+    const deferredPromise = new Deferred<void>();
     mockedProcessor = spy(async (_value, _workerId) => {
       deferredPromise.resolve();
       return await deferredPromise;
@@ -79,7 +76,7 @@ describe("Dispatch", () => {
     ].forEach(({ concurrentProcessorCount, processCount }) => {
       describe(`when processCount=${processCount} and concurrentProcessorCount=${concurrentProcessorCount}`, () => {
         const workerDelayMs = 25;
-        let deferredPromises: Record<string, Deferred>;
+        let deferredPromises: Record<string, Deferred<void>>;
 
         beforeEach(() => {
           deferredPromises = {};
@@ -102,11 +99,11 @@ describe("Dispatch", () => {
 
           // Arrange & Act
           const startTime = Date.now();
-          const deferredPromiseArray: Deferred[] = [];
+          const deferredPromiseArray: Deferred<void>[] = [];
 
           for (let index = 0; index < processCount; index++) {
             const value = `value-${index}`;
-            const deferredPromise = new Deferred();
+            const deferredPromise = new Deferred<void>();
 
             deferredPromiseArray.push(deferredPromise);
 
@@ -142,7 +139,7 @@ describe("Dispatch", () => {
 
     it("handles event", async () => {
       // Arrange
-      const deferredPromise = new Deferred();
+      const deferredPromise = new Deferred<void>();
       const eventListener = spy((_evt: DispatchQueueWorkerErrorEvent) => {
         deferredPromise.resolve();
       });

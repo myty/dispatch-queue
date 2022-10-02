@@ -1,14 +1,13 @@
-import { Queue } from "../src/queue.ts";
-import {
-  beforeEach,
-  describe,
-  it,
-} from "https://deno.land/std@0.158.0/testing/bdd.ts";
 import {
   assert,
   assertEquals,
   assertExists,
-} from "https://deno.land/std@0.158.0/testing/asserts.ts";
+  beforeEach,
+  describe,
+  it,
+} from "./deps.ts";
+
+import { Queue } from "../src/queue.ts";
 
 describe("Queue", () => {
   let queue: Queue<string>;
