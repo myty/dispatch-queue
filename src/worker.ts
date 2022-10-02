@@ -6,7 +6,7 @@ enum WorkerStatus {
 interface WorkerOptions<T> {
   processor(value: T, workerId: string): Promise<void>;
   onComplete(worker: Worker<T>): void;
-  onError(workerId: string, error: any): void;
+  onError(workerId: string, error: unknown): void;
 }
 
 export class Worker<T> implements Worker<T> {
