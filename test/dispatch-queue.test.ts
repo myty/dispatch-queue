@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from "vitest";
-import { DispatchQueue } from "../dispatch-queue";
-import { DispatchQueueEvents } from "../events/events";
-import { DispatchQueueWorkerErrorEvent } from "../events/worker-error-event";
+import { DispatchQueue } from "../src/dispatch-queue";
+import { DispatchQueueEvents } from "../src/events/events";
+import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event";
 import { Deferred } from "./test-utils/deferred";
 import { delay } from "./test-utils/delay";
 

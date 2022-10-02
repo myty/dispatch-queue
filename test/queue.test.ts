@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Queue } from "../queue";
+import { Queue } from "../src/queue";
 
 describe("Queue", () => {
   let queue: Queue<string>;
