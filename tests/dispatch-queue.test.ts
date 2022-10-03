@@ -15,6 +15,14 @@ import {
 import { DispatchQueue } from "../src/dispatch-queue.ts";
 import { DispatchQueueEvents } from "../src/events/events.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event.ts";
+import {
+  assertSpyCalls,
+  returnsNext,
+  Stub,
+  stub,
+} from "https://deno.land/std@0.158.0/testing/mock.ts";
+import { Queue } from "../src/queue.ts";
+import { DispatchQueueRuntimeErrorEvent } from "../src/events/runtime-error-event.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;
@@ -154,6 +162,87 @@ describe("Dispatch", () => {
 
       // Assert
       assertSpyCall(mockedProcessor, 0);
+    });
+  });
+
+  describe("when removeEventListener()", () => {
+    let eventListener: Spy<
+      unknown,
+      [_evt: DispatchQueueWorkerErrorEvent],
+      void
+    >;
+
+    beforeEach(() => {
+      mockedProcessor = spy((_value, _workerId) =>
+        Promise.reject("this is an error")
+      );
+      dispatcher = new DispatchQueue<string>({
+        processor: mockedProcessor,
+      });
+
+      eventListener = spy((_evt: DispatchQueueWorkerErrorEvent) => {});
+
+      dispatcher.addEventListener(
+        DispatchQueueEvents.WorkerError,
+        eventListener,
+      );
+    });
+
+    it("does not handle event", async () => {
+      // Arrange
+      dispatcher.removeEventListener(
+        DispatchQueueEvents.WorkerError,
+        eventListener,
+      );
+
+      // Act
+      dispatcher.process("test1");
+      await delay(10);
+
+      // Assert
+      assertSpyCalls(eventListener, 0);
+    });
+  });
+
+  describe("when unhandle runtime error occurs", () => {
+    let stubbedDequeue: Stub<Queue<unknown>, [], Promise<unknown>>;
+
+    beforeEach(() => {
+      stubbedDequeue = stub(
+        Queue.prototype,
+        "deque",
+        returnsNext([Promise.reject()]),
+      );
+
+      mockedProcessor = spy((_value, _workerId) => Promise.resolve());
+
+      dispatcher = new DispatchQueue<string>({
+        processor: mockedProcessor,
+      });
+    });
+
+    afterEach(() => {
+      stubbedDequeue.restore();
+    });
+
+    it("it handles exception", async () => {
+      const deferredPromise = new Deferred<void>();
+
+      const eventListener = spy((_evt: DispatchQueueRuntimeErrorEvent) => {
+        deferredPromise.resolve();
+      });
+
+      dispatcher.addEventListener(
+        DispatchQueueEvents.RuntimeError,
+        eventListener,
+      );
+
+      dispatcher.process("test");
+      dispatcher.startProcessing();
+
+      await deferredPromise;
+
+      assertSpyCalls(eventListener, 2);
     });
   });
 });

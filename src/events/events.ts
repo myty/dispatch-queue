@@ -1,4 +1,4 @@
 export enum DispatchQueueEvents {
   WorkerError = "worker-error",
-  StartupError = "startup-error",
+  RuntimeError = "runtime-error",
 }
