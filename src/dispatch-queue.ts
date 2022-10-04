@@ -1,13 +1,14 @@
 import { DispatchQueueEventMap } from "./events/events-map.ts";
 import { DispatchQueueEvents } from "./events/events.ts";
-import { DispatchQueueStartupErrorEvent } from "./events/startup-error-event.ts";
+import { DispatchQueueRuntimeErrorEvent } from "./events/runtime-error-event.ts";
 import { DispatchQueueWorkerErrorEvent } from "./events/worker-error-event.ts";
 import { Queue } from "./queue.ts";
 import { Worker } from "./worker.ts";
 
 interface DispatchQueueOptions<T> {
-  processor(value: T, workerId: string): Promise<void>;
+  autoStart?: boolean;
   concurrentWorkers?: number;
+  processor(value: T, workerId: string): Promise<void>;
 }
 
 /**
@@ -20,7 +21,11 @@ export class DispatchQueue<T> {
   private readonly _queue: Queue<T> = new Queue<T>();
   private readonly _readyWorkerQueue: Queue<Worker<T>> = new Queue<Worker<T>>();
 
-  constructor({ processor, concurrentWorkers = 2 }: DispatchQueueOptions<T>) {
+  constructor({
+    autoStart = true,
+    concurrentWorkers = 2,
+    processor,
+  }: DispatchQueueOptions<T>) {
     for (let i = 0; i < concurrentWorkers; i++) {
       this._readyWorkerQueue.enque(
         new Worker(`worker-${i}`, {
@@ -33,6 +38,10 @@ export class DispatchQueue<T> {
           },
         }),
       );
+    }
+
+    if (!autoStart) {
+      return;
     }
 
     this.startProcessing();
@@ -64,8 +73,8 @@ export class DispatchQueue<T> {
    * the DispatchQueue
    */
   startProcessing() {
-    this.start().catch((error) => {
-      this._events.dispatchEvent(new DispatchQueueStartupErrorEvent(error));
+    this.run().catch((error) => {
+      this._events.dispatchEvent(new DispatchQueueRuntimeErrorEvent(error));
     });
   }
 
@@ -76,7 +85,7 @@ export class DispatchQueue<T> {
     this._abortController?.abort();
   }
 
-  private async start(): Promise<void> {
+  private async run(): Promise<void> {
     this._abortController = new AbortController();
 
     while (!this._abortController.signal.aborted) {
