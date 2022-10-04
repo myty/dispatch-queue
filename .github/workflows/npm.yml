@@ -1,0 +1,22 @@
+name: NPM
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    name: Publishing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v1.1.0
+        with:
+          deno-version: v1.x # Run with latest stable Deno.
+
+      - name: Build and Test NPM Package
+        run: deno run -A scripts/build_npm.ts ${{ github.ref }}

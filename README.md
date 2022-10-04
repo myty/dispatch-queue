@@ -4,10 +4,20 @@
 [![deno land](https://badgen.net/github/release/myty/dispatch-queue?color=green&label=deno.land)](https://deno.land/x/dispatch_queue)
 [![Coverage Status](https://badgen.net/coveralls/c/github/myty/dispatch-queue?color=green)](https://coveralls.io/github/myty/dispatch-queue?branch=main)
 
-A deno and npm dispatch queue with the ability to configure multiple queue
-processors.
+A dispatch queue with the ability to configure multiple queue processors.
 
 ## Installation
+
+### Node.js
+
+```bash
+# npm
+npm install --save @myty/dispatch-queue
+# yarn
+yarn add @myty/dispatch-queue
+# pnpm
+pnpm install --save @myty/dispatch-queue
+```
 
 ### Deno
 
