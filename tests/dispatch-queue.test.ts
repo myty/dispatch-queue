@@ -3,24 +3,22 @@ import {
   assert,
   assertExists,
   assertSpyCall,
+  assertSpyCalls,
   beforeEach,
   Deferred,
   delay,
   describe,
   it,
+  returnsNext,
   Spy,
   spy,
+  Stub,
+  stub,
 } from "./deps.ts";
 
 import { DispatchQueue } from "../src/dispatch-queue.ts";
 import { DispatchQueueEvents } from "../src/events/events.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event.ts";
-import {
-  assertSpyCalls,
-  returnsNext,
-  Stub,
-  stub,
-} from "https://deno.land/std@0.158.0/testing/mock.ts";
 import { Queue } from "../src/queue.ts";
 import { DispatchQueueRuntimeErrorEvent } from "../src/events/runtime-error-event.ts";
 

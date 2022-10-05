@@ -5,13 +5,10 @@ await emptyDir("./npm");
 await build({
   entryPoints: ["./mod.ts"],
   outDir: "./npm",
-  shims: {
-    deno: true,
-    timers: true,
-    weakRef: true,
-  },
+  test: false,
+  shims: {},
   compilerOptions: {
-    lib: ["es2021", "dom"],
+    lib: ["es2018", "dom"],
   },
   package: {
     name: "@myty/dispatch-queue",
