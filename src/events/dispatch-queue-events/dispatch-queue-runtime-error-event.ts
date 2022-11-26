@@ -1,4 +1,4 @@
-import { DispatchQueueEvents } from "./events.ts";
+import { DispatchQueueEvents } from "./dispatch-queue-events.ts";
 
 export class DispatchQueueRuntimeErrorEvent extends Event {
   constructor(

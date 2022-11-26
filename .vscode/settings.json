@@ -1,5 +1,13 @@
 {
   "deno.enable": true,
+  "deno.codeLens.implementations": true,
+  "deno.codeLens.references": true,
+  "deno.codeLens.test": true,
+  "deno.codeLens.testArgs": [
+    "--allow-all",
+    "--no-check"
+  ],
+  "deno.codeLens.referencesAllFunctions": true,
   "deno.suggest.autoImports": true,
   "deno.suggest.completeFunctionCalls": true,
   "deno.suggest.imports.autoDiscover": true,
@@ -9,5 +17,15 @@
     "https://crux.land": true
   },
   "deno.suggest.names": true,
-  "deno.suggest.paths": true
+  "deno.suggest.paths": true,
+  "deno.unstable": true,
+  "deno.lint": true,
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file"
+  }
 }

@@ -17,10 +17,10 @@ import {
 } from "./deps.ts";
 
 import { DispatchQueue } from "../src/dispatch-queue.ts";
-import { DispatchQueueEvents } from "../src/events/events.ts";
-import { DispatchQueueWorkerErrorEvent } from "../src/events/worker-error-event.ts";
 import { Queue } from "../src/queue.ts";
-import { DispatchQueueRuntimeErrorEvent } from "../src/events/runtime-error-event.ts";
+import { DispatchQueueWorkerErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-worker-error-event.ts";
+import { DispatchQueueEvents } from "../src/events/dispatch-queue-events/dispatch-queue-events.ts";
+import { DispatchQueueRuntimeErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;

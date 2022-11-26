@@ -1,9 +1,17 @@
-import { DispatchQueueEventMap } from "./events/events-map.ts";
-import { DispatchQueueEvents } from "./events/events.ts";
-import { DispatchQueueRuntimeErrorEvent } from "./events/runtime-error-event.ts";
-import { DispatchQueueWorkerErrorEvent } from "./events/worker-error-event.ts";
 import { Queue } from "./queue.ts";
-import { Worker } from "./worker.ts";
+import { InProcessDispatchWorker } from "./workers/in-process-dispatch-worker.ts";
+import { DispatcWorkerEvents } from "./events/dispatch-worker-events/dispatch-worker-events.ts";
+import { DispatchWorkerStatusChangedEvent } from "./events/dispatch-worker-events/worker-status-changed-event.ts";
+import {
+  DispatchWorker,
+  DispatchWorkerEventListener,
+  DispatchWorkerStatus,
+} from "./workers/dispatch-worker.ts";
+import { DispatchQueueEvents } from "./events/dispatch-queue-events/dispatch-queue-events.ts";
+import { DispatchQueueRuntimeErrorEvent } from "./events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
+import { DispatchQueueEventsMap } from "./events/dispatch-queue-events/dispatch-queue-events-map.ts";
+import { DispatchWorkerErrorEvent } from "./events/dispatch-worker-events/dispatch-worker-error-event.ts";
+import { DispatchQueueWorkerErrorEvent } from "./events/dispatch-queue-events/dispatch-queue-worker-error-event.ts";
 
 interface DispatchQueueOptions<T> {
   autoStart?: boolean;
@@ -17,9 +25,12 @@ interface DispatchQueueOptions<T> {
 export class DispatchQueue<T> {
   private _abortController?: AbortController;
 
-  private readonly _events = new EventTarget();
-  private readonly _queue: Queue<T> = new Queue<T>();
-  private readonly _readyWorkerQueue: Queue<Worker<T>> = new Queue<Worker<T>>();
+  private readonly _dispatchQueueEvents = new EventTarget();
+  private readonly _processQueue: Queue<T> = new Queue<T>();
+  private readonly _readyDisptachWorkerQueue: Queue<DispatchWorker<T>> =
+    new Queue<
+      DispatchWorker<T>
+    >();
 
   constructor({
     autoStart = true,
@@ -27,15 +38,9 @@ export class DispatchQueue<T> {
     processor,
   }: DispatchQueueOptions<T>) {
     for (let i = 0; i < concurrentWorkers; i++) {
-      this._readyWorkerQueue.enque(
-        new Worker(`worker-${i}`, {
+      this._readyDisptachWorkerQueue.enque(
+        new InProcessDispatchWorker(`worker-${i}`, {
           processor,
-          onComplete: (worker) => this._readyWorkerQueue.enque(worker),
-          onError: (id, error) => {
-            this._events.dispatchEvent(
-              new DispatchQueueWorkerErrorEvent(error, id),
-            );
-          },
         }),
       );
     }
@@ -49,23 +54,26 @@ export class DispatchQueue<T> {
 
   addEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
+    listener: (ev: DispatchQueueEventsMap[TEvent]) => void,
   ): void {
-    this._events.addEventListener(type, listener as EventListener);
+    this._dispatchQueueEvents.addEventListener(type, listener as EventListener);
   }
 
   removeEventListener<TEvent extends DispatchQueueEvents>(
     type: TEvent,
-    listener: (ev: DispatchQueueEventMap[TEvent]) => void,
+    listener: (ev: DispatchQueueEventsMap[TEvent]) => void,
   ): void {
-    this._events.removeEventListener(type, listener as EventListener);
+    this._dispatchQueueEvents.removeEventListener(
+      type,
+      listener as EventListener,
+    );
   }
 
   /**
    * Add value to be processed by the dispatch queue
    */
   process<TValue extends T>(value: TValue): void {
-    this._queue.enque(value);
+    this._processQueue.enque(value);
   }
 
   /**
@@ -74,7 +82,9 @@ export class DispatchQueue<T> {
    */
   startProcessing() {
     this.run().catch((error) => {
-      this._events.dispatchEvent(new DispatchQueueRuntimeErrorEvent(error));
+      this._dispatchQueueEvents.dispatchEvent(
+        new DispatchQueueRuntimeErrorEvent(error),
+      );
     });
   }
 
@@ -88,10 +98,64 @@ export class DispatchQueue<T> {
   private async run(): Promise<void> {
     this._abortController = new AbortController();
 
+    const removeEventListeners = this.addWorkerEventListeners();
+
     while (!this._abortController.signal.aborted) {
-      const nextValue = await this._queue.deque();
-      const nextWorker = await this._readyWorkerQueue.deque();
+      const nextValue = await this._processQueue.deque();
+      const nextWorker = await this._readyDisptachWorkerQueue.deque();
       nextWorker.process(nextValue);
     }
+
+    removeEventListeners();
+  }
+
+  private addWorkerEventListeners(): () => void {
+    const removeEventListeners = this._readyDisptachWorkerQueue.map(
+      (worker) => {
+        const dispatchWorkerStatusChangedEventListener = (
+          evt: DispatchWorkerStatusChangedEvent,
+        ) => {
+          if (evt.status === DispatchWorkerStatus.Ready) {
+            this._readyDisptachWorkerQueue.enque(worker);
+          }
+        };
+
+        const dispatchWorkerErrorEventListener = (
+          evt: DispatchWorkerErrorEvent,
+        ) => {
+          this._dispatchQueueEvents.dispatchEvent(
+            new DispatchQueueWorkerErrorEvent(evt.error, evt.workerId),
+          );
+        };
+
+        worker.addEventListener(
+          DispatcWorkerEvents.StatusChanged,
+          dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
+        );
+
+        worker.addEventListener(
+          DispatcWorkerEvents.Error,
+          dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
+        );
+
+        return () => {
+          worker.removeEventListener(
+            DispatcWorkerEvents.StatusChanged,
+            dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
+          );
+
+          worker.removeEventListener(
+            DispatcWorkerEvents.Error,
+            dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
+          );
+        };
+      },
+    );
+
+    return () => {
+      removeEventListeners.forEach((removeEventListener) =>
+        removeEventListener()
+      );
+    };
   }
 }
