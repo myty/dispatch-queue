@@ -21,6 +21,8 @@ import { Queue } from "../src/queue.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-worker-error-event.ts";
 import { DispatchQueueEvents } from "../src/events/dispatch-queue-events/dispatch-queue-events.ts";
 import { DispatchQueueRuntimeErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
+import { InProcessDispatchWorker } from "../src/workers/in-process-dispatch-worker.ts";
+import { DispatchWorker } from "../src/workers/dispatch-worker.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;
@@ -33,7 +35,7 @@ describe("Dispatch", () => {
   beforeEach(() => {
     mockedProcessor = spy((_value, _workerId) => Promise.resolve());
     dispatcher = new DispatchQueue<string>({
-      processor: mockedProcessor,
+      workers: createWorkers(mockedProcessor),
     });
   });
 
@@ -59,7 +61,7 @@ describe("Dispatch", () => {
     });
 
     dispatcher = new DispatchQueue<string>({
-      processor: mockedProcessor,
+      workers: createWorkers(mockedProcessor),
     });
 
     // Act
@@ -90,10 +92,8 @@ describe("Dispatch", () => {
             await delay(workerDelayMs);
             deferredPromises[value].resolve();
           });
-
           dispatcher = new DispatchQueue<string>({
-            processor: mockedProcessor,
-            concurrentWorkers: concurrentProcessorCount,
+            workers: createWorkers(mockedProcessor, concurrentProcessorCount),
           });
         });
 
@@ -139,7 +139,7 @@ describe("Dispatch", () => {
         Promise.reject("this is an error")
       );
       dispatcher = new DispatchQueue<string>({
-        processor: mockedProcessor,
+        workers: createWorkers(mockedProcessor),
       });
     });
 
@@ -175,7 +175,7 @@ describe("Dispatch", () => {
         Promise.reject("this is an error")
       );
       dispatcher = new DispatchQueue<string>({
-        processor: mockedProcessor,
+        workers: createWorkers(mockedProcessor),
       });
 
       eventListener = spy((_evt: DispatchQueueWorkerErrorEvent) => {});
@@ -215,7 +215,7 @@ describe("Dispatch", () => {
       mockedProcessor = spy((_value, _workerId) => Promise.resolve());
 
       dispatcher = new DispatchQueue<string>({
-        processor: mockedProcessor,
+        workers: createWorkers(mockedProcessor),
       });
     });
 
@@ -244,3 +244,20 @@ describe("Dispatch", () => {
     });
   });
 });
+
+function createWorkers<T>(
+  processor: (value: T, workerId: string) => void | Promise<void>,
+  count = 2,
+): DispatchWorker<string>[] {
+  const workers: DispatchWorker<T>[] = [];
+
+  for (let i = 0; i < count; i++) {
+    workers.push(
+      new InProcessDispatchWorker(`worker-${i}`, {
+        processor,
+      }),
+    );
+  }
+
+  return workers;
+}

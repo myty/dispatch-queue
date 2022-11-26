@@ -1,5 +1,4 @@
 import { Queue } from "./queue.ts";
-import { InProcessDispatchWorker } from "./workers/in-process-dispatch-worker.ts";
 import { DispatcWorkerEvents } from "./events/dispatch-worker-events/dispatch-worker-events.ts";
 import { DispatchWorkerStatusChangedEvent } from "./events/dispatch-worker-events/worker-status-changed-event.ts";
 import {
@@ -15,8 +14,7 @@ import { DispatchQueueWorkerErrorEvent } from "./events/dispatch-queue-events/di
 
 interface DispatchQueueOptions<T> {
   autoStart?: boolean;
-  concurrentWorkers?: number;
-  processor(value: T, workerId: string): Promise<void>;
+  workers?: DispatchWorker<T>[];
 }
 
 /**
@@ -34,16 +32,9 @@ export class DispatchQueue<T> {
 
   constructor({
     autoStart = true,
-    concurrentWorkers = 2,
-    processor,
+    workers = [],
   }: DispatchQueueOptions<T>) {
-    for (let i = 0; i < concurrentWorkers; i++) {
-      this._readyDisptachWorkerQueue.enque(
-        new InProcessDispatchWorker(`worker-${i}`, {
-          processor,
-        }),
-      );
-    }
+    workers.forEach((worker) => this._readyDisptachWorkerQueue.enque(worker));
 
     if (!autoStart) {
       return;
