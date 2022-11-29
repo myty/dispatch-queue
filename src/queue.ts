@@ -12,16 +12,6 @@ export class Queue<T> {
     return this._queue.map(callbackfn);
   }
 
-  flatMap<TOutput>(
-    callback: (
-      value: T,
-      index: number,
-      array: T[],
-    ) => TOutput | ReadonlyArray<TOutput>,
-  ): TOutput[] {
-    return this._queue.flatMap(callback);
-  }
-
   enque<TValue extends T>(value: TValue): void {
     this._queue.push(value);
     this._eventTarget.dispatchEvent(new Event(QueueEvents.Enqued));

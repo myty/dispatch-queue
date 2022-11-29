@@ -1,16 +1,9 @@
-import { DispatchWorkerErrorEvent } from "../events/dispatch-worker-events/dispatch-worker-error-event.ts";
-import { DispatchWorkerEventMap } from "../events/dispatch-worker-events/dispatch-worker-events-map.ts";
-import { DispatcWorkerEvents } from "../events/dispatch-worker-events/dispatch-worker-events.ts";
-import { DispatchWorkerStatusChangedEvent } from "../events/dispatch-worker-events/worker-status-changed-event.ts";
-
-export enum DispatchWorkerStatus {
-  Ready,
-  Processing,
-}
-
-export type DispatchWorkerEventListener = <
-  TEvent extends Event,
->(ev: TEvent) => void | Promise<void>;
+import { DispatchWorkerStatus } from "./dispatch-worker-status.ts";
+import { DispatchWorkerEventListener } from "./dispatch-worker-event-listener.ts";
+import { DispatchWorkerErrorEvent } from "./events/dispatch-worker-events/dispatch-worker-error-event.ts";
+import { DispatchWorkerEventMap } from "./events/dispatch-worker-events/dispatch-worker-events-map.ts";
+import { DispatcWorkerEvents } from "./events/dispatch-worker-events/dispatch-worker-events.ts";
+import { DispatchWorkerStatusChangedEvent } from "./events/dispatch-worker-events/worker-status-changed-event.ts";
 
 export abstract class DispatchWorker<T> {
   private readonly _dispatchWorkerEvents = new EventTarget();

@@ -1,11 +1,9 @@
 import { Queue } from "./queue.ts";
 import { DispatcWorkerEvents } from "./events/dispatch-worker-events/dispatch-worker-events.ts";
 import { DispatchWorkerStatusChangedEvent } from "./events/dispatch-worker-events/worker-status-changed-event.ts";
-import {
-  DispatchWorker,
-  DispatchWorkerEventListener,
-  DispatchWorkerStatus,
-} from "./workers/dispatch-worker.ts";
+import { DispatchWorker } from "./dispatch-worker.ts";
+import { DispatchWorkerEventListener } from "./dispatch-worker-event-listener.ts";
+import { DispatchWorkerStatus } from "./dispatch-worker-status.ts";
 import { DispatchQueueEvents } from "./events/dispatch-queue-events/dispatch-queue-events.ts";
 import { DispatchQueueRuntimeErrorEvent } from "./events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
 import { DispatchQueueEventsMap } from "./events/dispatch-queue-events/dispatch-queue-events-map.ts";
@@ -24,11 +22,11 @@ export class DispatchQueue<T> {
   private _abortController?: AbortController;
 
   private readonly _dispatchQueueEvents = new EventTarget();
-  private readonly _processQueue: Queue<T> = new Queue<T>();
-  private readonly _readyDisptachWorkerQueue: Queue<DispatchWorker<T>> =
-    new Queue<
-      DispatchWorker<T>
-    >();
+  private readonly _processQueue = new Queue<T>();
+  private readonly _removeWorkerByIds: Array<string> = [];
+  private readonly _readyDisptachWorkerQueue = new Queue<
+    DispatchWorker<T>
+  >();
 
   constructor({
     autoStart = true,
@@ -86,22 +84,49 @@ export class DispatchQueue<T> {
     this._abortController?.abort();
   }
 
+  removeWorkerById(workerId: string): void {
+    this._removeWorkerByIds.push(workerId);
+  }
+
   private async run(): Promise<void> {
     this._abortController = new AbortController();
 
     const removeEventListeners = this.addWorkerEventListeners();
 
     while (!this._abortController.signal.aborted) {
-      const nextValue = await this._processQueue.deque();
       const nextWorker = await this._readyDisptachWorkerQueue.deque();
+      const forgetWorker = this.foundWorkerToBeRemovedById(nextWorker.id);
+
+      if (forgetWorker) {
+        continue;
+      }
+
+      const nextValue = await this._processQueue.deque();
       nextWorker.process(nextValue);
     }
 
     removeEventListeners();
   }
 
+  private foundWorkerToBeRemovedById(id: string): boolean {
+    if (
+      this._removeWorkerByIds.length > 0
+    ) {
+      const foundIndex = this._removeWorkerByIds.findIndex((workerId) =>
+        workerId === id
+      );
+
+      if (foundIndex >= 0) {
+        this._removeWorkerByIds.splice(foundIndex, 1);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   private addWorkerEventListeners(): () => void {
-    const removeEventListeners = this._readyDisptachWorkerQueue.map(
+    const removeEventListenerObjectss = this._readyDisptachWorkerQueue.map(
       (worker) => {
         const dispatchWorkerStatusChangedEventListener = (
           evt: DispatchWorkerStatusChangedEvent,
@@ -129,23 +154,26 @@ export class DispatchQueue<T> {
           dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
         );
 
-        return () => {
-          worker.removeEventListener(
-            DispatcWorkerEvents.StatusChanged,
-            dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
-          );
+        return {
+          workerId: worker.id,
+          unsubscribe: () => {
+            worker.removeEventListener(
+              DispatcWorkerEvents.StatusChanged,
+              dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
+            );
 
-          worker.removeEventListener(
-            DispatcWorkerEvents.Error,
-            dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
-          );
+            worker.removeEventListener(
+              DispatcWorkerEvents.Error,
+              dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
+            );
+          },
         };
       },
     );
 
     return () => {
-      removeEventListeners.forEach((removeEventListener) =>
-        removeEventListener()
+      removeEventListenerObjectss.forEach((removeEventListener) =>
+        removeEventListener.unsubscribe()
       );
     };
   }

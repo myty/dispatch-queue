@@ -21,8 +21,7 @@ import { Queue } from "../src/queue.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-worker-error-event.ts";
 import { DispatchQueueEvents } from "../src/events/dispatch-queue-events/dispatch-queue-events.ts";
 import { DispatchQueueRuntimeErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
-import { InProcessDispatchWorker } from "../src/workers/in-process-dispatch-worker.ts";
-import { DispatchWorker } from "../src/workers/dispatch-worker.ts";
+import { DispatchWorker } from "../src/dispatch-worker.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;
@@ -101,7 +100,7 @@ describe("Dispatch", () => {
           // Arrange
           const expectedDuration =
             Math.ceil(processCount / concurrentProcessorCount) * workerDelayMs +
-            concurrentProcessorCount * 25;
+            concurrentProcessorCount * workerDelayMs;
 
           // Arrange & Act
           const startTime = Date.now();
@@ -253,11 +252,21 @@ function createWorkers<T>(
 
   for (let i = 0; i < count; i++) {
     workers.push(
-      new InProcessDispatchWorker(`worker-${i}`, {
-        processor,
-      }),
+      new TestDispatchWorker(`worker-${i}`, processor),
     );
   }
 
   return workers;
+}
+
+class TestDispatchWorker<T> extends DispatchWorker<T> {
+  constructor(
+    id: string,
+    processor: (value: T, workerId: string) => void | Promise<void>,
+  ) {
+    super(id);
+    this.processor = processor;
+  }
+
+  readonly processor: (value: T, workerId: string) => void | Promise<void>;
 }
