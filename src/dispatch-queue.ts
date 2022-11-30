@@ -14,13 +14,46 @@ interface DispatchQueueOptions<T> {
   workers?: DispatchWorker<T>[];
 }
 
+interface DispatchQueueEventTarget extends EventTarget {
+  addEventListener<TEventType extends DispatchQueueEvents>(
+    type: TEventType,
+    callback: (ev: DispatchQueueEventsMap[TEventType]) => void,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
+  addEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void;
+
+  dispatchEvent<TEventType extends DispatchQueueEvents>(
+    event: DispatchQueueEventsMap[TEventType],
+  ): boolean;
+  dispatchEvent(event: Event): boolean;
+
+  removeEventListener<TEventType extends DispatchQueueEvents>(
+    type: TEventType,
+    callback: (ev: DispatchQueueEventsMap[TEventType]) => void,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
+  removeEventListener(
+    type: string,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ): void;
+}
+
+const TypedEventTarget = EventTarget as {
+  new (): DispatchQueueEventTarget;
+  prototype: DispatchQueueEventTarget;
+};
+
 /**
  * A typed dispatch queue with configurable max concurrent processors
  */
-export class DispatchQueue<T> {
+export class DispatchQueue<T> extends TypedEventTarget {
   private _abortController?: AbortController;
 
-  private readonly _dispatchQueueEvents = new EventTarget();
   private readonly _processQueue = new Queue<T>();
   private readonly _removeWorkerByIds: Array<string> = [];
   private readonly _readyDisptachWorkerQueue = new Queue<
@@ -31,6 +64,8 @@ export class DispatchQueue<T> {
     autoStart = true,
     workers = [],
   }: DispatchQueueOptions<T>) {
+    super();
+
     workers.forEach((worker) => this._readyDisptachWorkerQueue.enque(worker));
 
     if (!autoStart) {
@@ -38,23 +73,6 @@ export class DispatchQueue<T> {
     }
 
     this.startProcessing();
-  }
-
-  addEventListener<TEvent extends DispatchQueueEvents>(
-    type: TEvent,
-    listener: (ev: DispatchQueueEventsMap[TEvent]) => void,
-  ): void {
-    this._dispatchQueueEvents.addEventListener(type, listener as EventListener);
-  }
-
-  removeEventListener<TEvent extends DispatchQueueEvents>(
-    type: TEvent,
-    listener: (ev: DispatchQueueEventsMap[TEvent]) => void,
-  ): void {
-    this._dispatchQueueEvents.removeEventListener(
-      type,
-      listener as EventListener,
-    );
   }
 
   /**
@@ -70,7 +88,7 @@ export class DispatchQueue<T> {
    */
   startProcessing() {
     this.run().catch((error) => {
-      this._dispatchQueueEvents.dispatchEvent(
+      super.dispatchEvent(
         new DispatchQueueRuntimeErrorEvent(error),
       );
     });
@@ -138,7 +156,7 @@ export class DispatchQueue<T> {
         const dispatchWorkerErrorEventListener = (
           evt: DispatchWorkerErrorEvent,
         ) => {
-          this._dispatchQueueEvents.dispatchEvent(
+          super.dispatchEvent(
             new DispatchQueueWorkerErrorEvent(evt.error, evt.workerId),
           );
         };
