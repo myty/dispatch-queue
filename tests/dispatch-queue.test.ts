@@ -264,9 +264,6 @@ class TestDispatchWorker<T> extends DispatchWorker<T> {
     id: string,
     processor: (value: T, workerId: string) => void | Promise<void>,
   ) {
-    super(id);
-    this.processor = processor;
+    super({ id, processor });
   }
-
-  readonly processor: (value: T, workerId: string) => void | Promise<void>;
 }
