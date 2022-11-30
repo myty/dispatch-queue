@@ -21,7 +21,8 @@ import { Queue } from "../src/queue.ts";
 import { DispatchQueueWorkerErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-worker-error-event.ts";
 import { DispatchQueueEvents } from "../src/events/dispatch-queue-events/dispatch-queue-events.ts";
 import { DispatchQueueRuntimeErrorEvent } from "../src/events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
-import { DispatchWorker } from "../src/dispatch-worker.ts";
+import { DispatchWorker } from "../src/dispatch-worker/dispatch-worker.ts";
+import { StandardDispatchWorker } from "../src/dispatch-worker/standard-dispatch-worker.ts";
 
 describe("Dispatch", () => {
   let dispatcher: DispatchQueue<string>;
@@ -252,18 +253,9 @@ function createWorkers<T>(
 
   for (let i = 0; i < count; i++) {
     workers.push(
-      new TestDispatchWorker(`worker-${i}`, processor),
+      new StandardDispatchWorker(`worker-${i}`, processor),
     );
   }
 
   return workers;
-}
-
-class TestDispatchWorker<T> extends DispatchWorker<T> {
-  constructor(
-    id: string,
-    processor: (value: T, workerId: string) => void | Promise<void>,
-  ) {
-    super({ id, processor });
-  }
 }

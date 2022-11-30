@@ -1,4 +1,4 @@
-import { DispatchWorkerStatus } from "../../dispatch-worker-status.ts";
+import { DispatchWorkerStatus } from "../../dispatch-worker/dispatch-worker-status.ts";
 import { DispatchWorkerEvent } from "./dispatch-worker-event.ts";
 import { DispatcWorkerEvents } from "./dispatch-worker-events.ts";
 

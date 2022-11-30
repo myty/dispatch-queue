@@ -1,9 +1,8 @@
 import { Queue } from "./queue.ts";
 import { DispatcWorkerEvents } from "./events/dispatch-worker-events/dispatch-worker-events.ts";
 import { DispatchWorkerStatusChangedEvent } from "./events/dispatch-worker-events/worker-status-changed-event.ts";
-import { DispatchWorker } from "./dispatch-worker.ts";
-import { DispatchWorkerEventListener } from "./dispatch-worker-event-listener.ts";
-import { DispatchWorkerStatus } from "./dispatch-worker-status.ts";
+import { DispatchWorker } from "./dispatch-worker/dispatch-worker.ts";
+import { DispatchWorkerStatus } from "./dispatch-worker/dispatch-worker-status.ts";
 import { DispatchQueueEvents } from "./events/dispatch-queue-events/dispatch-queue-events.ts";
 import { DispatchQueueRuntimeErrorEvent } from "./events/dispatch-queue-events/dispatch-queue-runtime-error-event.ts";
 import { DispatchQueueEventsMap } from "./events/dispatch-queue-events/dispatch-queue-events-map.ts";
@@ -146,12 +145,12 @@ export class DispatchQueue<T> {
 
         worker.addEventListener(
           DispatcWorkerEvents.StatusChanged,
-          dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
+          dispatchWorkerStatusChangedEventListener,
         );
 
         worker.addEventListener(
           DispatcWorkerEvents.Error,
-          dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
+          dispatchWorkerErrorEventListener,
         );
 
         return {
@@ -159,12 +158,12 @@ export class DispatchQueue<T> {
           unsubscribe: () => {
             worker.removeEventListener(
               DispatcWorkerEvents.StatusChanged,
-              dispatchWorkerStatusChangedEventListener as DispatchWorkerEventListener,
+              dispatchWorkerStatusChangedEventListener,
             );
 
             worker.removeEventListener(
               DispatcWorkerEvents.Error,
-              dispatchWorkerErrorEventListener as DispatchWorkerEventListener,
+              dispatchWorkerErrorEventListener,
             );
           },
         };
